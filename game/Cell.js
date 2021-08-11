@@ -1,3 +1,5 @@
+import {images} from "./main.js";
+
 export class Cell
 {
     /**
@@ -6,6 +8,8 @@ export class Cell
     constructor(position)
     {
         this.position = position;
+        this.sprite = images["Grass"];
+        this.occupiedBy = null;
     }
 
 }
