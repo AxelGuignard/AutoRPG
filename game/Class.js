@@ -1,16 +1,14 @@
 export class Class
 {
-    constructor(vitalityModifier, strengthModifier, defenseModifier, agilityModifier, intelligenceModifier, mainStats, animationWalking1, animationWalking2, animationAttack1, animationAttack2)
+    constructor(vitalityModifier, strengthModifier, defenseModifier, agilityModifier, intelligenceModifier, aggroModifier, mainStats, sprites)
     {
         this.vitalityModifier = vitalityModifier;
         this.strengthModifier = strengthModifier;
         this.defenseModifier = defenseModifier;
         this.agilityModifier = agilityModifier;
         this.intelligenceModifier = intelligenceModifier;
+        this.aggroModifier = aggroModifier;
         this.mainStats = mainStats;
-        this.animationWalking1 = animationWalking1;
-        this.animationWalking2 = animationWalking2;
-        this.animationAttack1 = animationAttack1;
-        this.animationAttack2 = animationAttack2;
+        this.sprites = sprites;
     }
 }

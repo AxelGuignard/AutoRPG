@@ -9,6 +9,7 @@ export class Cell
     {
         this.position = position;
         this.sprite = images["Grass"];
+        /** @type {Entity} */
         this.occupiedBy = null;
     }
 
