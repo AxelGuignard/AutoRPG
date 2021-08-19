@@ -10,49 +10,6 @@ export class Hero extends Entity
         this.raiseStats(3);
     }
 
-    raiseStats(points)
-    {
-        let weights = {vitality: 1, strength: 1, defense: 1, agility: 1, intelligence: 1};
-        for (let stat of this.class.mainStats)
-        {
-            weights[stat] += 3;
-        }
-
-        let random = 0;
-        let totalWeights = Object.values(weights).reduce((a, b) => a + b);
-        let thresholds = {vitality: 0, strength: 0, defense: 0, agility: 0, intelligence: 100};
-        thresholds.vitality = weights.vitality / totalWeights * 100;
-        thresholds.strength = thresholds.vitality + weights.strength / totalWeights * 100;
-        thresholds.defense = thresholds.strength + weights.defense / totalWeights * 100;
-        thresholds.agility = thresholds.defense + weights.agility / totalWeights * 100;
-
-        while (points > 0)
-        {
-            random = Math.random() * 99 + 1;
-            if (random <= thresholds.vitality)
-            {
-                this.vitality++;
-            }
-            else if (random > thresholds.vitality && random <= thresholds.strength)
-            {
-                this.strength++;
-            }
-            else if (random > thresholds.strength && random <= thresholds.defense)
-            {
-                this.defense++;
-            }
-            else if (random > thresholds.defense && random <= thresholds.agility)
-            {
-                this.agility++;
-            }
-            else if (random > thresholds.agility)
-            {
-                this.intelligence++;
-            }
-            points--;
-        }
-    }
-
     move()
     {
 
@@ -73,10 +30,17 @@ export class Hero extends Entity
      */
     attack(step, target)
     {
-        if (typeof this.class.attack === "function")
-            this.class.attack(target, this);
-        else
-            target.takeDamage(this.strength + this.class.strengthModifier);
+        if (step === 1)
+        {
+            if (typeof this.class.attack === "function")
+                this.class.attack(target, this);
+            else
+                target.takeDamage((this.strength + this.class.strengthModifier) * 10);
+        }
+        else if (step === 2)
+        {
+            this.doing.end = true;
+        }
     }
 
     /**
@@ -102,10 +66,23 @@ export class Hero extends Entity
         if (typeof this.class.takeDamage === "function")
             this.class.takeDamage(damage, this);
         else
-            this.currentHealth -= damage * (1 - Math.min(Math.round((this.defense + this.class.defenseModifier) * 0.05), 0.9));
+            this.currentHealth -= Math.round(damage * (1 - Math.min((this.defense + this.class.defenseModifier) * 0.05, 0.9)));
     }
 
-    getSprite(sprite) {
+    getSprite(sprite)
+    {
         return this.class.sprites[sprite];
+    }
+
+    gainLevel()
+    {
+        super.gainLevel();
+        if (this.level === 3 || this.level === 10)
+            this.chooseClass();
+    }
+
+    chooseClass()
+    {
+        // TODO
     }
 }

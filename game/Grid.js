@@ -48,13 +48,13 @@ export class Grid
     getAdjacentCells(cell)
     {
         let adjacentCells = [];
-        if (this.getCell({x: cell.position.x - 1, y: cell.position.y}) !== null)
+        if (typeof this.getCell({x: cell.position.x - 1, y: cell.position.y}) !== "undefined")
             adjacentCells.push(this.getCell({x: cell.position.x - 1, y: cell.position.y}));
-        if (this.getCell({x: cell.position.x + 1, y: cell.position.y}) !== null)
+        if (typeof this.getCell({x: cell.position.x + 1, y: cell.position.y}) !== "undefined")
             adjacentCells.push(this.getCell({x: cell.position.x + 1, y: cell.position.y}));
-        if (this.getCell({x: cell.position.x, y: cell.position.y - 1}) !== null)
+        if (typeof this.getCell({x: cell.position.x, y: cell.position.y - 1}) !== "undefined")
             adjacentCells.push(this.getCell({x: cell.position.x, y: cell.position.y - 1}));
-        if (this.getCell({x: cell.position.x, y: cell.position.y + 1}) !== null)
+        if (typeof this.getCell({x: cell.position.x, y: cell.position.y + 1}) !== "undefined")
             adjacentCells.push(this.getCell({x: cell.position.x, y: cell.position.y + 1}));
         return adjacentCells;
     }
@@ -64,7 +64,7 @@ export class Grid
         let borders = [];
         for (let cell of this.cells)
         {
-            if (cell.position.x === 0 || cell.position.x === this.size.x || cell.position.y === 0 || cell.position.y === this.size.y)
+            if (cell.position.x === 0 || cell.position.x === this.size.x - 1 || cell.position.y === 0 || cell.position.y === this.size.y - 1)
                 borders.push(cell);
         }
 

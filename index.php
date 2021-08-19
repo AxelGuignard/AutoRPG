@@ -5,6 +5,8 @@
     </head>
     <body>
         <canvas class="viewport"></canvas>
+        <input type="range" min="0" max="1990" step="10" value="1000" id="speed">
+        <label for="speed">Speed</label>
 
         <div id="toLoad" hidden>
             <ul>

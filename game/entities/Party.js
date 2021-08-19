@@ -16,4 +16,20 @@ export class Party extends Entity
         else
             this.type = "monster";
     }
+
+    gainExperience(experience)
+    {
+        for (let member of this.members)
+        {
+            member.gainExperience(experience);
+        }
+    }
+
+    gainLevel()
+    {
+        for (let member of this.members)
+        {
+            member.gainLevel();
+        }
+    }
 }

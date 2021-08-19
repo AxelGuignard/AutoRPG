@@ -24,12 +24,33 @@ function start()
 
     game.addHero();
     game.addHero();
+    game.addMonster();
+    game.addMonster();
 
     //game.drawFirstFrame();
 
     $(window).on("resize", () =>
     {
         game.viewport.resize();
+    }).on("keydown", (e) =>
+    {
+        if (game.updateTimeoutId !== null)
+        {
+            if (e.code === "Space")
+            {
+                clearTimeout(game.updateTimeoutId);
+                game.updateTimeoutId = null;
+            }
+        }
+        else
+        {
+            game.updateTimeoutId = setTimeout(game.update, game.tickTime);
+        }
+    });
+
+    $("#speed").on("change", (e) =>
+    {
+        game.tickTime = 2000 - e.target.value;
     });
 }
 

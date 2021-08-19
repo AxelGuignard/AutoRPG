@@ -1,25 +1,77 @@
 export class Entity
 {
-    constructor(cell, vitality, strength, defense, agility, intelligence, baseAggro, sprites)
+    constructor(cell, vitality, strength, defense, agility, intelligence, baseAggro, sprites, level = 1)
     {
         this.vitality = vitality;
         this.strength = strength;
         this.defense = defense;
         this.agility = agility;
         this.intelligence = intelligence;
-        this.maxHealth = vitality * 10;
+        this.maxHealth = vitality * 100;
         this.currentHealth = this.maxHealth;
         this.baseAggro = baseAggro;
         this.sprites = sprites;
+        this.level = level;
+        this.xp = 0;
+        this.xpToLevelUp = 10 * this.level;
         this.cell = cell;
         this.inBattle = null;
-        this.doing = {action: null, step: 0, target: null};
+        this.inParty = null;
+        this.doing = {action: "idle", step: 0, target: null, end: true};
         this.direction = Math.round(Math.random() * 3 + 1);
+    }
+
+    raiseStats(points)
+    {
+        let weights = {vitality: 1, strength: 1, defense: 1, agility: 1, intelligence: 1};
+        if (this.hasOwnProperty("class"))
+        {
+            for (let stat of this.class.mainStats)
+            {
+                weights[stat] += 3;
+            }
+        }
+
+        let random;
+        let totalWeights = Object.values(weights).reduce((a, b) => a + b);
+        let thresholds = {vitality: 0, strength: 0, defense: 0, agility: 0, intelligence: 100};
+        thresholds.vitality = weights.vitality / totalWeights * 100;
+        thresholds.strength = thresholds.vitality + weights.strength / totalWeights * 100;
+        thresholds.defense = thresholds.strength + weights.defense / totalWeights * 100;
+        thresholds.agility = thresholds.defense + weights.agility / totalWeights * 100;
+
+        while (points > 0)
+        {
+            random = Math.random() * 99 + 1;
+            if (random <= thresholds.vitality)
+            {
+                this.vitality++;
+                this.maxHealth = this.vitality * 100;
+                this.currentHealth += 100;
+            }
+            else if (random > thresholds.vitality && random <= thresholds.strength)
+            {
+                this.strength++;
+            }
+            else if (random > thresholds.strength && random <= thresholds.defense)
+            {
+                this.defense++;
+            }
+            else if (random > thresholds.defense && random <= thresholds.agility)
+            {
+                this.agility++;
+            }
+            else if (random > thresholds.agility)
+            {
+                this.intelligence++;
+            }
+            points--;
+        }
     }
 
     /**
      * Returns a random foe to target in battle
-     * @return {Entity|void}
+     * @return {Entity}
      */
     chooseTarget()
     {
@@ -29,7 +81,7 @@ export class Entity
         let weight;
         for (let foe of selfParticipant.foes)
         {
-            weight = 1 + foe.baseAggro;
+            weight = foe.baseAggro;
             if (foe.hasOwnProperty("class"))
                 weight += foe.class.aggroModifier;
             targetsAggro.push(weight);
@@ -48,7 +100,10 @@ export class Entity
 
     resolveCombatAction()
     {
-        this.doing = {action: "attack", step: 0, target: this.chooseTarget()};
+        this.doing.action = "attack";
+        this.doing.step = 1;
+        this.doing.target = this.chooseTarget();
+        this.doing.end = false;
     }
 
     /**
@@ -60,8 +115,11 @@ export class Entity
         if (step === 1)
         {
             if (target.checkHit())
-                target.takeDamage(this.strength);
-            this.doing.step++;
+                target.takeDamage(this.strength * 10);
+        }
+        else if (step === 2)
+        {
+            this.doing.end = true;
         }
     }
 
@@ -73,7 +131,7 @@ export class Entity
 
     takeDamage(damage)
     {
-        this.currentHealth -= damage * (1 - Math.min(Math.round(this.defense * 0.05), 0.9));
+        this.currentHealth -= Math.round(damage * (1 - Math.min(this.defense * 0.05, 0.9)));
     }
 
     /**
@@ -82,6 +140,7 @@ export class Entity
      */
     walk(step, target)
     {
+        this.cell.occupiedBy = null;
         if (step === 1)
         {
             let newCell;
@@ -128,10 +187,20 @@ export class Entity
                     }
                     break;
             }
+            this.cell.occupiedBy = this;
+        }
+        else if (step === 2)
+        {
+            this.doing.end = true;
         }
     }
 
     mate()
+    {
+        // TODO
+    }
+
+    formParty(step, target)
     {
         // TODO
     }
@@ -159,5 +228,38 @@ export class Entity
             return 3;
         else if (this.cell.position.y === grid.size.y - 1)
             return 4;
+    }
+
+    reinitializeAction()
+    {
+        this.doing = {action: "idle", step: 0, target: null, end: true};
+    }
+
+    gainExperience(experience)
+    {
+        this.xp += experience;
+        if (this.xp >= this.xpToLevelUp)
+        {
+            this.xp -= this.xpToLevelUp;
+            this.gainLevel();
+        }
+    }
+
+    gainLevel()
+    {
+        this.level++;
+        this.raiseStats(2);
+        this.xpToLevelUp = this.level * 10;
+    }
+
+    regenerate()
+    {
+        if (this.doing.step % 2 === 0)
+            this.heal(this.vitality * 5);
+    }
+
+    heal(health)
+    {
+        this.currentHealth = Math.min(this.currentHealth + health, this.maxHealth);
     }
 }
