@@ -24,8 +24,6 @@ function start()
 
     game.addHero();
     game.addHero();
-    game.addMonster();
-    game.addMonster();
 
     //game.drawFirstFrame();
 

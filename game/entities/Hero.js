@@ -1,5 +1,9 @@
 import {Entity} from "../Entity.js";
 import {Pegu} from "../classes/Pegu.js";
+import {Fighter} from "../classes/Fighter.js";
+import {Wizard} from "../classes/Wizard.js";
+import {Rogue} from "../classes/Rogue.js";
+import {Utils} from "../Utils.js";
 
 export class Hero extends Entity
 {
@@ -7,12 +11,8 @@ export class Hero extends Entity
     {
         super(cell, 1, 1, 1, 1, 1, 1, null);
         this.class = new Pegu();
+        this.classLevel = 0;
         this.raiseStats(3);
-    }
-
-    move()
-    {
-
     }
 
     resolveCombatAction()
@@ -25,19 +25,17 @@ export class Hero extends Entity
 
     /**
      * Heroes attack depends on their class
-     * @param {Number} step
-     * @param {Entity} target
      */
-    attack(step, target)
+    attack()
     {
-        if (step === 1)
+        if (this.doing.step === 1)
         {
             if (typeof this.class.attack === "function")
-                this.class.attack(target, this);
-            else
-                target.takeDamage((this.strength + this.class.strengthModifier) * 10);
+                this.class.attack(this.doing.target, this);
+            else if (this.doing.target.checkHit())
+                this.doing.target.takeDamage((this.getStrength()) * 10);
         }
-        else if (step === 2)
+        else if (this.doing.step === 2)
         {
             this.doing.end = true;
         }
@@ -53,7 +51,7 @@ export class Hero extends Entity
         else
         {
             let random = Math.random() * 99 + 1;
-            return random > this.agility + this.class.agilityModifier;
+            return random > this.getAgility();
         }
     }
 
@@ -66,7 +64,7 @@ export class Hero extends Entity
         if (typeof this.class.takeDamage === "function")
             this.class.takeDamage(damage, this);
         else
-            this.currentHealth -= Math.round(damage * (1 - Math.min((this.defense + this.class.defenseModifier) * 0.05, 0.9)));
+            this.currentHealth -= Math.round(damage * (1 - Math.min((this.getDefense()) * 0.05, 0.9)));
     }
 
     getSprite(sprite)
@@ -77,12 +75,51 @@ export class Hero extends Entity
     gainLevel()
     {
         super.gainLevel();
+        console.log(this.level);
         if (this.level === 3 || this.level === 10)
             this.chooseClass();
     }
 
     chooseClass()
     {
-        // TODO
+        let classes;
+        let weights;
+        if (this.classLevel === 0)
+        {
+            classes = ["fighter", "wizard", "rogue"];
+            weights = [
+                Math.round(Fighter.mainStats.reduce((a, b) => a + this[b], 0) / Fighter.mainStats.length),
+                Math.round(Wizard.mainStats.reduce((a, b) => a + this[b], 0) / Wizard.mainStats.length),
+                Math.round(Rogue.mainStats.reduce((a, b) => a + this[b], 0) / Rogue.mainStats.length)
+            ];
+
+            console.log(weights);
+
+            switch (classes[Utils.getRandomItem(weights)])
+            {
+                case "fighter":
+                    this.class = new Fighter();
+                    break;
+                case "wizard":
+                    this.class = new Wizard(this);
+                    break;
+                case "rogue":
+                    this.class = new Rogue();
+                    break;
+            }
+        }
+
+        console.log(this.class);
+
+        this.classLevel++;
+        this.updateStats();
+    }
+
+    regenerate()
+    {
+        if (typeof this.class.regenerate === "function")
+            this.class.regenerate(this);
+        else if (this.doing.step % 2 === 0)
+            this.heal(this.getVitality() * 5);
     }
 }

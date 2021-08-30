@@ -179,13 +179,29 @@ export class Game
                     }
                 }
             }
+
+            if (this.mode === "auto")
+            {
+                let heroNbr = 0;
+                for (let entity of this.entities)
+                {
+                    if (entity instanceof Hero || entity instanceof Party && entity.type === "hero")
+                        heroNbr++;
+                }
+                if (heroNbr < 2)
+                {
+                    this.addHero();
+                }
+            }
         }
 
         // resolve actions
         for (let entity of this.entities)
         {
             if (typeof entity[entity.doing.action] === "function")
-                entity[entity.doing.action](entity.doing.step, entity.doing.target);
+                entity[entity.doing.action]();
+            else if (typeof entity.class === "object" && typeof entity.class[entity.doing.action] === "function")
+                entity.class[entity.doing.action](entity);
             this.drawAction(entity);
             if (entity.inBattle === null)
                 entity.regenerate();
@@ -203,8 +219,23 @@ export class Game
                 this.addMonster();
         }
 
-        // console.log(this);
-        console.log(this.entities.map(entity => [entity.currentHealth + "/", entity.maxHealth, entity.doing.action, "step: " + entity.doing.step, "experience: " + entity.xp, "level: " + entity.level]));
+        // debug
+        console.log(this.entities.map(entity => [
+            entity.currentHealth + "/",
+            entity.maxHealth,
+            entity.doing.action,
+            "step: " + entity.doing.step,
+            "experience: " + entity.xp,
+            "level: " + entity.level,
+            typeof entity.class === "object" ? entity.class : "monster",
+            [
+                "vitality: " + entity.vitality,
+                "strength: " + entity.strength,
+                "defense: " + entity.defense,
+                "agility: " + entity.agility,
+                "intelligence: " + entity.intelligence
+            ]
+        ]));
 
         this.updateTimeoutId = setTimeout(this.update, this.tickTime);
     }

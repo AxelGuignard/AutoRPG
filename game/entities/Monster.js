@@ -7,18 +7,22 @@ export class Monster extends Entity
         super(cell, vitality, strength, defense, agility, intelligence, baseAggro, sprites);
     }
 
-    attack(step, target)
+    attack()
     {
-        if (step === 2)
+        if (this.doing.step === 2)
         {
-            if (target.checkHit())
-                target.takeDamage(this.strength * 10);
+            if (this.doing.target.checkHit())
+                this.doing.target.takeDamage(this.strength * 10);
             this.doing.end = true;
         }
     }
 
     idle()
     {
-        this.gainExperience(1);
+        if (this.doing.step === 2)
+        {
+            this.gainExperience(1);
+            this.doing.end = true;
+        }
     }
 }

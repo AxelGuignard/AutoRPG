@@ -1,6 +1,12 @@
 export class Class
 {
-    constructor(vitalityModifier, strengthModifier, defenseModifier, agilityModifier, intelligenceModifier, aggroModifier, mainStats, sprites)
+    /**
+     * @constant
+     * @abstract
+     */
+    static mainStats;
+
+    constructor(vitalityModifier, strengthModifier, defenseModifier, agilityModifier, intelligenceModifier, aggroModifier, sprites)
     {
         this.vitalityModifier = vitalityModifier;
         this.strengthModifier = strengthModifier;
@@ -8,7 +14,15 @@ export class Class
         this.agilityModifier = agilityModifier;
         this.intelligenceModifier = intelligenceModifier;
         this.aggroModifier = aggroModifier;
-        this.mainStats = mainStats;
         this.sprites = sprites;
+    }
+
+    /**
+     * @abstract
+     * @return {Array}
+     */
+    getMainStats()
+    {
+        return Class.mainStats;
     }
 }

@@ -1,3 +1,5 @@
+import {Utils} from "./Utils.js";
+
 export class Entity
 {
     constructor(cell, vitality, strength, defense, agility, intelligence, baseAggro, sprites, level = 1)
@@ -17,56 +19,110 @@ export class Entity
         this.cell = cell;
         this.inBattle = null;
         this.inParty = null;
-        this.doing = {action: "idle", step: 0, target: null, end: true};
+        this.doing = {action: "idle", step: 1, target: null, end: false};
         this.direction = Math.round(Math.random() * 3 + 1);
+    }
+
+    getVitality()
+    {
+        if (typeof this.class === "object")
+            return this.vitality + this.class.vitalityModifier;
+        return this.vitality;
+    }
+
+    setVitality(newVitality)
+    {
+        if (typeof this.class === "object" && typeof this.class.setVitality === "function")
+            this.class.setVitality(newVitality, this);
+        else
+        {
+            let difference = this.getVitality() * 100 - this.maxHealth;
+            this.vitality = newVitality;
+            this.maxHealth = this.getVitality() * 100;
+            this.currentHealth += difference;
+        }
+    }
+
+    getStrength()
+    {
+        if (typeof this.class === "object")
+            return this.strength + this.class.strengthModifier;
+        return this.strength;
+    }
+
+    setStrength(newStrength)
+    {
+        if (typeof this.class === "object" && typeof this.class.setStrength === "function")
+            this.class.setStrength(newStrength, this);
+        else
+            this.strength = newStrength;
+    }
+
+
+    getDefense()
+    {
+        if (typeof this.class === "object")
+            return this.defense + this.class.defenseModifier;
+        return this.defense;
+    }
+
+    setDefense(newDefense)
+    {
+        if (typeof this.class === "object" && typeof this.class.setDefense === "function")
+            this.class.setDefense(newDefense, this);
+        else
+            this.defense = newDefense;
+    }
+
+    getAgility()
+    {
+        if (typeof this.class === "object")
+            return this.agility + this.class.agilityModifier;
+        return this.agility;
+    }
+
+    setAgility(newAgility)
+    {
+        if (typeof this.class === "object" && typeof this.class.setAgility === "function")
+            this.class.setAgility(newAgility, this);
+        else
+            this.agility = newAgility;
+    }
+
+    getIntelligence()
+    {
+        if (typeof this.class === "object")
+            return this.intelligence + this.class.intelligenceModifier;
+        return this.intelligence;
+    }
+
+    setIntelligence(newIntelligence)
+    {
+        if (typeof this.class === "object" && typeof this.class.setIntelligence === "function")
+            this.class.setIntelligence(newIntelligence, this);
+        else
+            this.intelligence = newIntelligence;
     }
 
     raiseStats(points)
     {
-        let weights = {vitality: 1, strength: 1, defense: 1, agility: 1, intelligence: 1};
+        let stats = ["vitality", "strength", "defense", "agility", "intelligence"];
+        let weights = [1, 1, 1, 1, 1];
         if (this.hasOwnProperty("class"))
         {
-            for (let stat of this.class.mainStats)
+            for (let stat of this.class.getMainStats())
             {
-                weights[stat] += 3;
+                weights[stats.indexOf(stat)] += 3;
             }
         }
-
-        let random;
-        let totalWeights = Object.values(weights).reduce((a, b) => a + b);
-        let thresholds = {vitality: 0, strength: 0, defense: 0, agility: 0, intelligence: 100};
-        thresholds.vitality = weights.vitality / totalWeights * 100;
-        thresholds.strength = thresholds.vitality + weights.strength / totalWeights * 100;
-        thresholds.defense = thresholds.strength + weights.defense / totalWeights * 100;
-        thresholds.agility = thresholds.defense + weights.agility / totalWeights * 100;
 
         while (points > 0)
         {
-            random = Math.random() * 99 + 1;
-            if (random <= thresholds.vitality)
-            {
-                this.vitality++;
-                this.maxHealth = this.vitality * 100;
-                this.currentHealth += 100;
-            }
-            else if (random > thresholds.vitality && random <= thresholds.strength)
-            {
-                this.strength++;
-            }
-            else if (random > thresholds.strength && random <= thresholds.defense)
-            {
-                this.defense++;
-            }
-            else if (random > thresholds.defense && random <= thresholds.agility)
-            {
-                this.agility++;
-            }
-            else if (random > thresholds.agility)
-            {
-                this.intelligence++;
-            }
+            this[stats[Utils.getRandomItem(weights)]]++;
             points--;
         }
+
+        this.updateStats();
     }
 
     /**
@@ -76,7 +132,6 @@ export class Entity
     chooseTarget()
     {
         let selfParticipant = this.inBattle.participants[this.inBattle.participants.map((object) => {return object["participant"]}).indexOf(this)];
-        let random = Math.random() * 99 + 1;
         let targetsAggro = [];
         let weight;
         for (let foe of selfParticipant.foes)
@@ -87,15 +142,7 @@ export class Entity
             targetsAggro.push(weight);
         }
 
-        let totalWeights = targetsAggro.reduce((a, b) => a + b);
-        let currentThreshold = 0;
-        for (let i = 0; i < targetsAggro.length; i++)
-        {
-            let targetThreshold = targetsAggro[i] / totalWeights * 100 + currentThreshold;
-            if (random >= currentThreshold && random < targetThreshold)
-                return selfParticipant.foes[i];
-            currentThreshold += targetThreshold;
-        }
+        return selfParticipant.foes[Utils.getRandomItem(targetsAggro)];
     }
 
     resolveCombatAction()
@@ -106,18 +153,14 @@ export class Entity
         this.doing.end = false;
     }
 
-    /**
-     * @param {Number} step
-     * @param {Entity} target
-     */
-    attack(step, target)
+    attack()
     {
-        if (step === 1)
+        if (this.doing.step === 1)
         {
-            if (target.checkHit())
-                target.takeDamage(this.strength * 10);
+            if (this.doing.target.checkHit())
+                this.doing.target.takeDamage(this.getStrength() * 10);
         }
-        else if (step === 2)
+        else if (this.doing.step === 2)
         {
             this.doing.end = true;
         }
@@ -126,70 +169,66 @@ export class Entity
     checkHit()
     {
         let random = Math.random() * 99 + 1;
-        return random > this.agility;
+        return random > this.getAgility();
     }
 
     takeDamage(damage)
     {
-        this.currentHealth -= Math.round(damage * (1 - Math.min(this.defense * 0.05, 0.9)));
+        this.currentHealth -= Math.round(damage * (1 - Math.min(this.getDefense() * 0.05, 0.9)));
     }
 
-    /**
-     * @param {Number} step
-     * @param {Grid} target
-     */
-    walk(step, target)
+    walk()
     {
         this.cell.occupiedBy = null;
-        if (step === 1)
+        if (this.doing.step === 1)
         {
             let newCell;
             switch (this.direction)
             {
                 case 1:
-                    newCell = target.getCell({x: this.cell.position.x + 1, y: this.cell.position.y});
+                    newCell = this.doing.target.getCell({x: this.cell.position.x + 1, y: this.cell.position.y});
                     if (typeof newCell !== "undefined")
                         this.cell = newCell;
                     else
                     {
-                        this.cell = target.getRandomBorder();
-                        this.direction = this.getDirection(target);
+                        this.cell = this.doing.target.getRandomBorder();
+                        this.direction = this.getDirection(this.doing.target);
                     }
                     break;
                 case 2:
-                    newCell = target.getCell({x: this.cell.position.x, y: this.cell.position.y + 1});
+                    newCell = this.doing.target.getCell({x: this.cell.position.x, y: this.cell.position.y + 1});
                     if (typeof newCell !== "undefined")
                         this.cell = newCell;
                     else
                     {
-                        this.cell = target.getRandomBorder();
-                        this.direction = this.getDirection(target);
+                        this.cell = this.doing.target.getRandomBorder();
+                        this.direction = this.getDirection(this.doing.target);
                     }
                     break;
                 case 3:
-                    newCell = target.getCell({x: this.cell.position.x - 1, y: this.cell.position.y});
+                    newCell = this.doing.target.getCell({x: this.cell.position.x - 1, y: this.cell.position.y});
                     if (typeof newCell !== "undefined")
                         this.cell = newCell;
                     else
                     {
-                        this.cell = target.getRandomBorder();
-                        this.direction = this.getDirection(target);
+                        this.cell = this.doing.target.getRandomBorder();
+                        this.direction = this.getDirection(this.doing.target);
                     }
                     break;
                 case 4:
-                    newCell = target.getCell({x: this.cell.position.x, y: this.cell.position.y - 1});
+                    newCell = this.doing.target.getCell({x: this.cell.position.x, y: this.cell.position.y - 1});
                     if (typeof newCell !== "undefined")
                         this.cell = newCell;
                     else
                     {
-                        this.cell = target.getRandomBorder();
-                        this.direction = this.getDirection(target);
+                        this.cell = this.doing.target.getRandomBorder();
+                        this.direction = this.getDirection(this.doing.target);
                     }
                     break;
             }
             this.cell.occupiedBy = this;
         }
-        else if (step === 2)
+        else if (this.doing.step === 2)
         {
             this.doing.end = true;
         }
@@ -200,7 +239,7 @@ export class Entity
         // TODO
     }
 
-    formParty(step, target)
+    formParty()
     {
         // TODO
     }
@@ -232,12 +271,12 @@ export class Entity
 
     reinitializeAction()
     {
-        this.doing = {action: "idle", step: 0, target: null, end: true};
+        this.doing = {action: "idle", step: 1, target: null, end: false};
     }
 
     gainExperience(experience)
     {
-        this.xp += experience;
+        this.xp += Math.round(experience * (1 + this.getIntelligence() / 100));
         if (this.xp >= this.xpToLevelUp)
         {
             this.xp -= this.xpToLevelUp;
@@ -255,11 +294,20 @@ export class Entity
     regenerate()
     {
         if (this.doing.step % 2 === 0)
-            this.heal(this.vitality * 5);
+            this.heal(this.getVitality() * 5);
     }
 
     heal(health)
     {
         this.currentHealth = Math.min(this.currentHealth + health, this.maxHealth);
+    }
+
+    updateStats()
+    {
+        this.setVitality(this.vitality);
+        this.setStrength(this.strength);
+        this.setDefense(this.defense);
+        this.setAgility(this.agility);
+        this.setIntelligence(this.intelligence);
     }
 }

@@ -3,8 +3,23 @@ import {Class} from "../Class.js";
 
 export class Pegu extends Class
 {
+    static mainStats = [];
+
     constructor()
     {
-        super(0, 0, 0, 0, 0, 0, [], {walk1: images["PeguWalking1"], walk2: images["PeguWalking2"], attack1: images["PeguAttack1"], attack2: images["PeguWalking2"], mate1: null /* images["PeguMate1"] */, mate2: null /*images["PeguMate2"]*/});
+        let sprites = {
+            walk1: images["PeguWalking1"],
+            walk2: images["PeguWalking2"],
+            attack1: images["PeguAttack1"],
+            attack2: images["PeguWalking2"],
+            mate1:  images["PeguWalking1"],
+            mate2: images["PeguWalking2"]
+        };
+        super(0, 0, 0, 0, 0, 0, sprites);
+    }
+
+    getMainStats()
+    {
+        return Pegu.mainStats;
     }
 }
